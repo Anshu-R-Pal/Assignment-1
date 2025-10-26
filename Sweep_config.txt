@@ -1,0 +1,21 @@
+#Sweep Config
+sweep_config = {
+    "method": "bayes",
+    "metric": {"name": "best_val_acc", "goal": "maximize"},
+    "parameters": {
+        "optimizer": {"values": ["adam","sgd","nesterov","adagrad","rmsprop"]},
+        "lr": {"values": [0.01,0.1]},
+        "batch_size": {"values": [32,64,128]},
+        "epochs": {"values": [5,10,15]},
+        "momentum": {"min": 0.8, "max": 0.99},
+        "activation": {"values": ["relu","sigmoid","tanh","silu","gelu"]},
+        "batch_norm": {"values":[True,False]}
+    }
+}
+
+
+sweep_id = wandb.sweep(sweep_config, project="Assignment1")
+
+# Run 20 Bayesian-selected configurations
+
+wandb.agent(sweep_id, function=sweep_train, count=20)

@@ -1,0 +1,28 @@
+  #W&B Sweep YAML (Inline)
+
+sweep_yaml = """
+method: bayes
+metric:
+  name: best_val_acc
+  goal: maximize
+parameters:
+  activation:
+    values: ["relu","sigmoid","tanh","silu","gelu"]
+  optimizer:
+    values: ["adam", "sgd", "nesterov", "adagrad", "rmsprop"]
+  lr:
+    min: 0.0001
+    max: 0.01
+  batch_size:
+    values: [32, 64, 128]
+  epochs:
+    values: [5,10,15,20]
+  momentum:
+    min: 0.01
+    max: 0.1
+  batch_norm:
+    values: [True, False]
+
+"""
+with open("sweep.yaml", "w") as f:
+    f.write(sweep_yaml)

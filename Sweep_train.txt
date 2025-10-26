@@ -1,0 +1,27 @@
+#Sweep Training function
+def sweep_train():
+    with wandb.init() as run:
+        config = wandb.config
+        train_loader, val_loader = GetCifar10(config.batch_size)
+        _, test_loader = GetCifar10(config.batch_size)
+
+        cfg=[64, 64, 'M', 128, 128, 'M']
+
+        model = VGG(make_layers(cfg,activation=config.activation)).to(device)
+
+        # Optimizer selection
+        if config.optimizer == "adam":
+            optimizer = optim.Adam(model.parameters(), lr=config.lr)
+        elif config.optimizer == "sgd":
+            optimizer = optim.SGD(model.parameters(), lr=config.lr, momentum=config.momentum)
+        elif config.optimizer == "nesterov":
+            optimizer = optim.SGD(model.parameters(), lr=config.lr, momentum=config.momentum, nesterov=True)
+        elif config.optimizer == "adagrad":
+            optimizer = optim.Adagrad(model.parameters(), lr=config.lr)
+        elif config.optimizer == "rmsprop":
+            optimizer = optim.RMSprop(model.parameters(), lr=config.lr, momentum=config.momentum)
+
+        criterion = nn.CrossEntropyLoss()
+
+        best_val_acc = train(model, train_loader, val_loader, test_loader, device, optimizer, criterion, config.epochs, wandb_run=run)
+        wandb.run.summary["best_val_acc"] = best_val_acc

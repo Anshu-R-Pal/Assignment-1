@@ -1,0 +1,63 @@
+#VGG6 Model
+
+def get_activation(name='relu'):
+    activations = {
+       'relu': nn.ReLU(inplace=True),
+        'leakyrelu': nn.LeakyReLU(0.1, inplace=True),
+        'elu': nn.ELU(inplace=True),
+        'selu': nn.SELU(inplace=True),
+        'sigmoid': nn.Sigmoid(),
+        'tanh': nn.Tanh(),
+        'silu': nn.SiLU(inplace=True),
+        'gelu': nn.GELU()
+    }
+    return activations.get(name.lower(), nn.ReLU(inplace=True))
+
+class VGG(nn.Module):
+    def __init__(self, features, num_classes=10):
+        super(VGG, self).__init__()
+        self.features = features
+        self.classifier = nn.Linear(128, num_classes)
+        self._initialize_weights()
+
+    def forward(self, x):
+        x = self.features(x)
+        x = F.adaptive_avg_pool2d(x, (1, 1))
+        x = torch.flatten(x, 1)
+        x = self.classifier(x)
+        return x
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0]*m.kernel_size[1]*m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2./n))
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
+def make_layers(cfg, activation='relu', batch_norm=True):
+    layers = []
+    in_channels = 3
+    for v in cfg:
+        if v == 'M':
+            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+        else:
+            conv = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
+            if batch_norm:
+                layers += [conv, nn.BatchNorm2d(v), get_activation(activation)]
+            else:
+                layers += [conv, get_activation(activation)]
+            in_channels = v
+    return nn.Sequential(*layers)
+
+def vgg(cfg, num_classes=10, batch_norm=True, activation='relu'):
+    return VGG(make_layers(cfg, activation=activation, batch_norm=batch_norm),
+               num_classes=num_classes)
+
